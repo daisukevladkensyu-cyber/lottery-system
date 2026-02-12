@@ -380,14 +380,28 @@ function showQrCode(campaignId, campaignName) {
     elements.campaignUrl.value = url;
     elements.qrCodeContainer.innerHTML = '';
 
-    // QRコードライブラリが読み込まれているか確認
-    if (typeof window.QRCode === 'undefined') {
-        console.error('QRCodeライブラリが読み込まれていません');
-        alert('QRコードライブラリの読み込みに失敗しました。ページを再読み込みしてください。');
-        return;
-    }
+    // QRコードライブラリが読み込まれるまで待機
+    const waitForQRCode = setInterval(() => {
+        if (typeof window.QRCode !== 'undefined') {
+            clearInterval(waitForQRCode);
+            generateQRCode(url);
+        }
+    }, 100);
 
-    // QRコード生成
+    // 5秒経ってもライブラリが読み込まれない場合はエラー
+    setTimeout(() => {
+        if (typeof window.QRCode === 'undefined') {
+            clearInterval(waitForQRCode);
+            console.error('QRCodeライブラリが読み込まれていません');
+            alert('QRコードライブラリの読み込みに失敗しました。ページを再読み込みしてください。');
+        }
+    }, 5000);
+
+    elements.qrModal.classList.remove('hidden');
+}
+
+// QRコード生成処理を分離
+function generateQRCode(url) {
     window.QRCode.toCanvas(url, {
         width: 300,
         margin: 2,
@@ -405,8 +419,6 @@ function showQrCode(campaignId, campaignName) {
         currentQrCanvas = canvas;
         elements.qrCodeContainer.appendChild(canvas);
     });
-
-    elements.qrModal.classList.remove('hidden');
 }
 
 // ==========================================
