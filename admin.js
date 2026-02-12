@@ -380,22 +380,8 @@ function showQrCode(campaignId, campaignName) {
     elements.campaignUrl.value = url;
     elements.qrCodeContainer.innerHTML = '';
 
-    // QRコードライブラリが読み込まれるまで待機
-    const waitForQRCode = setInterval(() => {
-        if (typeof window.QRCode !== 'undefined') {
-            clearInterval(waitForQRCode);
-            generateQRCode(url);
-        }
-    }, 100);
-
-    // 5秒経ってもライブラリが読み込まれない場合はエラー
-    setTimeout(() => {
-        if (typeof window.QRCode === 'undefined') {
-            clearInterval(waitForQRCode);
-            console.error('QRCodeライブラリが読み込まれていません');
-            alert('QRコードライブラリの読み込みに失敗しました。ページを再読み込みしてください。');
-        }
-    }, 5000);
+    // QRコードを生成
+    generateQRCode(url);
 
     elements.qrModal.classList.remove('hidden');
 }
@@ -532,15 +518,6 @@ function formatDateTimeLocal(date) {
     return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
-// QRCodeライブラリの読み込み確認
-window.addEventListener('load', () => {
-    console.log('🔍 QRCodeライブラリの状態:', typeof window.QRCode);
-    if (typeof window.QRCode !== 'undefined') {
-        console.log('✅ QRCodeライブラリが正常に読み込まれました');
-    } else {
-        console.error('❌ QRCodeライブラリが読み込まれていません');
-    }
-});
-
 console.log('🎁 管理画面初期化完了');
+
 
