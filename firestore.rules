@@ -1,42 +1,50 @@
 rules_version = '2';
 
 // ==========================================
-// Firestore セキュリティルール（個人情報保護版）
+// Firestore セキュリティルール（企画管理対応版）
 // ==========================================
-//
-// このルールは最大限のセキュリティとプライバシーを確保します：
-// - 認証済みユーザーのみが自分のデータを作成可能
-// - 本人のみが自分のデータを読み取り可能
-// - データの更新・削除は誰もできない
-// - 個人情報（氏名・メールアドレス）は保存しない
-// - 電話番号はハッシュ化されて保存される
-//
-// Firebase Consoleでこのルールを設定してください：
-// 1. Firebase Console > Firestore Database > ルール
-// 2. 以下の内容をコピー＆ペースト
-// 3. 「公開」をクリック
-//
 
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // applicantsコレクション
-    match /applicants/{uid} {
-      // 作成: 認証済みユーザーが自分のUIDと一致する場合のみ
+    // 管理者判定関数
+    function isAdmin() {
+      // ここに管理者のメールアドレスを追加
+      return request.auth != null && 
+             request.auth.token.email in [
+               'daisukevladkensyu@gmail.com'  // 管理者のメールアドレス
+             ];
+    }
+    
+    // campaignsコレクション（企画情報）
+    match /campaigns/{campaignId} {
+      // 読み取り: 誰でも可能（企画情報は公開）
+      allow read: if true;
+      
+      // 作成・更新・削除: 管理者のみ
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // applicantsコレクション（応募者情報）
+    match /applicants/{applicantId} {
+      // applicantIdの形式: {campaignId}_{uid}
+      
+      // 作成: 認証済みユーザーが自分のデータを作成する場合のみ
       allow create: if request.auth != null 
-                    && request.auth.uid == uid
-                    && request.resource.data.keys().hasAll(['uid', 'phoneHash', 'appliedAt', 'status'])
-                    && request.resource.data.uid == uid
+                    && applicantId == request.resource.data.campaignId + '_' + request.auth.uid
+                    && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.keys().hasAll(['campaignId', 'uid', 'phoneHash', 'appliedAt', 'status'])
                     && request.resource.data.status == 'pending'
                     && request.resource.data.phoneHash is string
-                    && request.resource.data.phoneHash.size() == 64  // SHA-256ハッシュは64文字
-                    && !request.resource.data.keys().hasAny(['name', 'email', 'phone']);  // 個人情報の保存を禁止
+                    && request.resource.data.phoneHash.size() == 64
+                    && !request.resource.data.keys().hasAny(['name', 'email', 'phone']);
       
-      // 読み取り: 認証済みユーザーが自分のデータのみ読み取り可能
-      allow read: if request.auth != null && request.auth.uid == uid;
+      // 読み取り: 本人または管理者のみ
+      allow read: if request.auth != null && 
+                     (applicantId.matches('.*_' + request.auth.uid) || isAdmin());
       
-      // 更新・削除: 誰も許可しない（管理者はAdmin SDKで操作）
-      allow update, delete: if false;
+      // 更新・削除: 管理者のみ
+      allow update, delete: if isAdmin();
     }
     
     // その他のコレクションはすべて拒否

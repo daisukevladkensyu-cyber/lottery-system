@@ -34,6 +34,23 @@ const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 
 // ==========================================
+// 企画IDの取得
+// ==========================================
+
+const urlParams = new URLSearchParams(window.location.search);
+const campaignId = urlParams.get('campaign');
+
+console.log('📋 企画ID:', campaignId || 'なし（デフォルト）');
+
+// 企画IDがない場合はエラー
+if (!campaignId) {
+    console.error('❌ 企画IDが指定されていません');
+    // デフォルト企画IDを使用するか、エラー画面を表示
+}
+
+let currentCampaign = null;
+
+// ==========================================
 // DOM要素の取得
 // ==========================================
 
@@ -133,8 +150,9 @@ onAuthStateChanged(auth, async (user) => {
     console.log('👤 認証状態変更:', user ? `ログイン済み (${user.email})` : '未ログイン');
 
     if (user) {
-        // ログイン済み - 既に応募しているかチェック
-        console.log('📋 応募状態をチェック中...');
+        // ログイン済み - 企画情報を読み込んでから応募状態をチェック
+        console.log('📋 企画情報を読み込み中...');
+        await loadCampaignInfo();
         await checkApplicationStatus(user);
     } else {
         // 未ログイン - ログイン画面を表示
@@ -147,14 +165,73 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 // ==========================================
+// 日付フォーマットユーティリティ
+// ==========================================
+
+function formatDate(date) {
+    if (!date) return '';
+    const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+    return new Intl.DateTimeFormat('ja-JP', options).format(date);
+}
+
+// ==========================================
+// 企画情報の読み込み
+// ==========================================
+
+async function loadCampaignInfo() {
+    if (!campaignId) {
+        showError('企画IDが指定されていません。URLを確認してください。');
+        return;
+    }
+
+    try {
+        const docRef = doc(db, 'campaigns', campaignId);
+        const docSnap = await getDoc(docRef);
+
+        if (!docSnap.exists()) {
+            showError('指定された企画が見つかりません。');
+            return;
+        }
+
+        currentCampaign = docSnap.data();
+        console.log('✅ 企画情報読み込み完了:', currentCampaign.name);
+
+        // 企画の有効期限チェック
+        const now = new Date();
+        const startDate = currentCampaign.startDate?.toDate();
+        const endDate = currentCampaign.endDate?.toDate();
+
+        if (now < startDate) {
+            showError(`この企画は${formatDate(startDate)}から開始されます。`);
+            return;
+        }
+
+        if (now > endDate) {
+            showError('この企画は終了しました。');
+            return;
+        }
+
+    } catch (error) {
+        console.error('❌ 企画情報の読み込みエラー:', error);
+        showError('企画情報の読み込みに失敗しました。');
+    }
+}
+
+// ==========================================
 // 応募状態のチェック
 // ==========================================
 
 async function checkApplicationStatus(user) {
+    if (!campaignId) return;
+
     try {
         console.log('🔍 Firestoreからデータ取得中...', user.uid);
-        const docRef = doc(db, 'applicants', user.uid);
+        const applicantId = `${campaignId}_${user.uid}`;
+        const docRef = doc(db, 'applicants', applicantId);
+        console.log('📄 ドキュメント参照作成完了');
+
         const docSnap = await getDoc(docRef);
+        console.log('📥 データ取得完了:', docSnap.exists() ? '存在する' : '存在しない');
 
         if (docSnap.exists()) {
             // 既に応募済み
@@ -164,12 +241,14 @@ async function checkApplicationStatus(user) {
             // 未応募 - 応募フォームを表示
             console.log('📝 未応募 - 応募フォームを表示');
             displayUserInfo(user);
+            displayCampaignInfo();
             showScreen('application');
         }
     } catch (error) {
         console.error('❌ 応募状態の確認エラー:', error);
         console.error('エラーコード:', error.code);
         console.error('エラーメッセージ:', error.message);
+        console.error('エラー詳細:', error);
         showError('応募状態の確認中にエラーが発生しました。再度お試しください。');
     }
 }
@@ -181,6 +260,31 @@ async function checkApplicationStatus(user) {
 function displayUserInfo(user) {
     elements.userName.textContent = user.displayName || '名前未設定';
     elements.userEmail.textContent = user.email || 'メールアドレス未設定';
+}
+
+// ==========================================
+// 企画情報の表示
+// ==========================================
+
+function displayCampaignInfo() {
+    if (!currentCampaign) return;
+
+    // 企画名をページタイトルに表示
+    document.title = `${currentCampaign.name} - 抽選応募`;
+
+    // 企画情報を応募フォームに表示（HTMLに要素があれば）
+    const campaignNameElement = document.getElementById('campaign-name-display');
+    const campaignDescElement = document.getElementById('campaign-desc-display');
+
+    if (campaignNameElement) {
+        campaignNameElement.textContent = currentCampaign.name;
+    }
+
+    if (campaignDescElement && currentCampaign.description) {
+        campaignDescElement.textContent = currentCampaign.description;
+    }
+
+    console.log('✅ 企画情報表示完了');
 }
 
 // ==========================================
@@ -257,10 +361,11 @@ elements.submitBtn.addEventListener('click', async () => {
         const phoneHash = await hashPhoneNumber(phoneNumber);
         console.log('🔐 ハッシュ化完了');
 
-        // 重複チェック: 同じ電話番号ハッシュが既に存在するか確認
+        // 重複チェック: 同じ企画で同じ電話番号ハッシュが既に存在するか確認
         console.log('🔍 重複チェック中...');
         const q = query(
             collection(db, 'applicants'),
+            where('campaignId', '==', campaignId),
             where('phoneHash', '==', phoneHash)
         );
         const querySnapshot = await getDocs(q);
@@ -276,7 +381,9 @@ elements.submitBtn.addEventListener('click', async () => {
         elements.submitBtn.textContent = '送信中...';
 
         // Firestoreに応募データを保存（個人情報は保存しない）
-        await setDoc(doc(db, 'applicants', user.uid), {
+        const applicantId = `${campaignId}_${user.uid}`;
+        await setDoc(doc(db, 'applicants', applicantId), {
+            campaignId: campaignId,           // 企画ID
             uid: user.uid,                    // Firebase認証ID
             phoneHash: phoneHash,             // ハッシュ化された電話番号（重複チェック用）
             appliedAt: serverTimestamp(),     // 応募日時

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>抽選システム管理画面</title>
+    <meta name="description" content="抽選システムの管理画面 - 企画の作成・管理">
+    <link rel="stylesheet" href="admin-styles.css">
+</head>
+
+<body>
+    <div class="admin-container">
+        <!-- ローディング画面 -->
+        <div id="loading" class="screen loading">
+            <div class="spinner"></div>
+            <p>読み込み中...</p>
+        </div>
+
+        <!-- ログイン画面 -->
+        <div id="login-screen" class="screen hidden">
+            <div class="card">
+                <div class="header">
+                    <h1>🔐 管理者ログイン</h1>
+                    <p class="subtitle">管理者権限が必要です</p>
+                </div>
+                <div class="content">
+                    <button id="admin-login-btn" class="btn-primary">
+                        <svg width="18" height="18" viewBox="0 0 18 18">
+                            <path fill="#4285F4"
+                                d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" />
+                            <path fill="#34A853"
+                                d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z" />
+                            <path fill="#FBBC05"
+                                d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.347 6.175 0 7.55 0 9s.348 2.825.957 4.039l3.007-2.332z" />
+                            <path fill="#EA4335"
+                                d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" />
+                        </svg>
+                        Googleアカウントでログイン
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 権限エラー画面 -->
+        <div id="unauthorized-screen" class="screen hidden">
+            <div class="card">
+                <div class="header error">
+                    <div class="error-icon">⚠</div>
+                    <h1>アクセス権限がありません</h1>
+                </div>
+                <div class="content">
+                    <p class="error-text">このアカウントには管理者権限がありません。</p>
+                    <button id="logout-unauthorized-btn" class="btn-secondary">ログアウト</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 管理画面 -->
+        <div id="admin-screen" class="screen hidden">
+            <div class="admin-header">
+                <h1>🎁 抽選システム管理画面</h1>
+                <div class="admin-info">
+                    <span id="admin-email"></span>
+                    <button id="logout-btn" class="btn-logout">ログアウト</button>
+                </div>
+            </div>
+
+            <div class="admin-content">
+                <!-- 企画作成ボタン -->
+                <div class="action-bar">
+                    <button id="create-campaign-btn" class="btn-primary">+ 新しい企画を作成</button>
+                </div>
+
+                <!-- 企画一覧 -->
+                <div id="campaigns-list" class="campaigns-list">
+                    <!-- 動的に生成 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 企画作成/編集モーダル -->
+        <div id="campaign-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="modal-title">新しい企画を作成</h2>
+                    <button id="close-modal-btn" class="btn-close">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="campaign-name">企画名 <span class="required">*</span></label>
+                        <input type="text" id="campaign-name" class="input-field" placeholder="例: 夏のキャンペーン" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="campaign-description">説明</label>
+                        <textarea id="campaign-description" class="input-field" rows="3"
+                            placeholder="企画の説明を入力してください"></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="campaign-start-date">開始日時 <span class="required">*</span></label>
+                            <input type="datetime-local" id="campaign-start-date" class="input-field" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="campaign-end-date">終了日時 <span class="required">*</span></label>
+                            <input type="datetime-local" id="campaign-end-date" class="input-field" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="campaign-max-winners">当選者数 <span class="required">*</span></label>
+                        <input type="number" id="campaign-max-winners" class="input-field" min="1" value="10" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="cancel-modal-btn" class="btn-secondary">キャンセル</button>
+                    <button id="save-campaign-btn" class="btn-primary">保存</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- QRコード表示モーダル -->
+        <div id="qr-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>QRコード</h2>
+                    <button id="close-qr-modal-btn" class="btn-close">×</button>
+                </div>
+                <div class="modal-body qr-modal-body">
+                    <div id="qr-code-container"></div>
+                    <div class="url-container">
+                        <input type="text" id="campaign-url" class="input-field" readonly>
+                        <button id="copy-url-btn" class="btn-secondary">URLをコピー</button>
+                    </div>
+                    <button id="download-qr-btn" class="btn-primary">QRコードをダウンロード</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- QRコード生成ライブラリ -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <!-- Firebase SDK -->
+    <script type="module" src="admin.js"></script>
+</body>
+
+</html>
