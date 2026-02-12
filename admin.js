@@ -380,8 +380,15 @@ function showQrCode(campaignId, campaignName) {
     elements.campaignUrl.value = url;
     elements.qrCodeContainer.innerHTML = '';
 
+    // QRコードライブラリが読み込まれているか確認
+    if (typeof window.QRCode === 'undefined') {
+        console.error('QRCodeライブラリが読み込まれていません');
+        alert('QRコードライブラリの読み込みに失敗しました。ページを再読み込みしてください。');
+        return;
+    }
+
     // QRコード生成
-    QRCode.toCanvas(url, {
+    window.QRCode.toCanvas(url, {
         width: 300,
         margin: 2,
         color: {
