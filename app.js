@@ -16,6 +16,9 @@ import {
     doc,
     setDoc,
     getDoc,
+    query,
+    where,
+    getDocs,
     serverTimestamp
 } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 
@@ -52,6 +55,7 @@ const elements = {
     retryBtn: document.getElementById('retry-btn'),
     userName: document.getElementById('user-name'),
     userEmail: document.getElementById('user-email'),
+    phoneNumber: document.getElementById('phone-number'),
     errorMessage: document.getElementById('error-message')
 };
 
@@ -74,6 +78,33 @@ function showScreen(screenName) {
 function showError(message) {
     elements.errorMessage.textContent = message;
     showScreen('error');
+}
+
+// ==========================================
+// 電話番号のハッシュ化
+// ==========================================
+
+// 電話番号を正規化（ハイフンと空白を削除）
+function normalizePhoneNumber(phone) {
+    return phone.replace(/[-\s]/g, '');
+}
+
+// SHA-256ハッシュ化
+async function hashPhoneNumber(phone) {
+    const normalized = normalizePhoneNumber(phone);
+    const encoder = new TextEncoder();
+    const data = encoder.encode(normalized);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    return hashHex;
+}
+
+// 電話番号のバリデーション
+function validatePhoneNumber(phone) {
+    const normalized = normalizePhoneNumber(phone);
+    // 日本の電話番号: 10桁または11桁
+    return /^0\d{9,10}$/.test(normalized);
 }
 
 // ==========================================
@@ -184,8 +215,45 @@ elements.submitBtn.addEventListener('click', async () => {
         return;
     }
 
+    // 電話番号の取得
+    const phoneNumber = elements.phoneNumber.value.trim();
+
+    // バリデーション
+    if (!phoneNumber) {
+        showError('電話番号を入力してください。');
+        return;
+    }
+
+    if (!validatePhoneNumber(phoneNumber)) {
+        showError('正しい電話番号を入力してください。（例: 090-1234-5678）');
+        return;
+    }
+
     try {
         elements.submitBtn.disabled = true;
+        elements.submitBtn.textContent = '確認中...';
+
+        // 電話番号をハッシュ化
+        console.log('📞 電話番号をハッシュ化中...');
+        const phoneHash = await hashPhoneNumber(phoneNumber);
+        console.log('🔐 ハッシュ化完了');
+
+        // 重複チェック: 同じ電話番号ハッシュが既に存在するか確認
+        console.log('🔍 重複チェック中...');
+        const q = query(
+            collection(db, 'applicants'),
+            where('phoneHash', '==', phoneHash)
+        );
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+            // 重複応募
+            console.log('⚠️ 重複応募検出');
+            showError('この電話番号は既に応募済みです。お一人様1回のみ応募可能です。');
+            return;
+        }
+
+        console.log('✅ 重複なし');
         elements.submitBtn.textContent = '送信中...';
 
         // Firestoreに応募データを保存
@@ -193,9 +261,12 @@ elements.submitBtn.addEventListener('click', async () => {
             uid: user.uid,
             name: user.displayName,
             email: user.email,
+            phoneHash: phoneHash,  // ハッシュ化された電話番号のみ保存
             appliedAt: serverTimestamp(),
             status: 'pending' // pending, winner, loser
         });
+
+        console.log('✅ 応募データ保存完了');
 
         // 成功画面を表示
         showScreen('success');
