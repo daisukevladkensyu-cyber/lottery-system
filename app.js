@@ -80,12 +80,18 @@ function showError(message) {
 // 認証状態の監視
 // ==========================================
 
+console.log('🔄 認証状態の監視を開始...');
+
 onAuthStateChanged(auth, async (user) => {
+    console.log('👤 認証状態変更:', user ? `ログイン済み (${user.email})` : '未ログイン');
+
     if (user) {
         // ログイン済み - 既に応募しているかチェック
+        console.log('📋 応募状態をチェック中...');
         await checkApplicationStatus(user);
     } else {
         // 未ログイン - ログイン画面を表示
+        console.log('🔓 ログイン画面を表示');
         showScreen('login');
     }
 });
@@ -96,19 +102,24 @@ onAuthStateChanged(auth, async (user) => {
 
 async function checkApplicationStatus(user) {
     try {
+        console.log('🔍 Firestoreからデータ取得中...', user.uid);
         const docRef = doc(db, 'applicants', user.uid);
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
             // 既に応募済み
+            console.log('✅ 既に応募済み');
             showScreen('alreadyApplied');
         } else {
             // 未応募 - 応募フォームを表示
+            console.log('📝 未応募 - 応募フォームを表示');
             displayUserInfo(user);
             showScreen('application');
         }
     } catch (error) {
-        console.error('応募状態の確認エラー:', error);
+        console.error('❌ 応募状態の確認エラー:', error);
+        console.error('エラーコード:', error.code);
+        console.error('エラーメッセージ:', error.message);
         showError('応募状態の確認中にエラーが発生しました。再度お試しください。');
     }
 }
