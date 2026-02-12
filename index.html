@@ -85,9 +85,9 @@
                         </div>
                         <div class="info-item">
                             <label>電話番号 <span class="required">必須</span></label>
-                            <input type="tel" id="phone-number" class="input-field" placeholder="例: 090-1234-5678"
-                                pattern="[0-9\-]+" required>
-                            <p class="input-note">※ ハイフンあり・なしどちらでも可</p>
+                            <input type="tel" id="phone-number" class="input-field" placeholder="例: 09012345678"
+                                pattern="[0-9]{11}" maxlength="11" inputmode="numeric" required>
+                            <p class="input-note">※ ハイフンなし11桁で入力してください（例: 09012345678）</p>
                         </div>
                     </div>
 

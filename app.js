@@ -348,7 +348,7 @@ elements.submitBtn.addEventListener('click', async () => {
     }
 
     if (!validatePhoneNumber(phoneNumber)) {
-        showError('正しい電話番号を入力してください。（例: 090-1234-5678）');
+        showError('正しい電話番号を入力してください。ハイフンなし11桁で入力してください。（例: 09012345678）');
         return;
     }
 
@@ -445,8 +445,29 @@ elements.retryBtn.addEventListener('click', () => {
 });
 
 // ==========================================
+// 電話番号処理
+// ==========================================
+
+// 電話番号のバリデーション（ハイフンなし11桁のみ）
+function validatePhoneNumber(phoneNumber) {
+    // 数字のみ11桁かチェック
+    const phoneRegex = /^[0-9]{11}$/;
+    return phoneRegex.test(phoneNumber);
+}
+
+// 電話番号のハッシュ化（SHA-256）
+async function hashPhoneNumber(phoneNumber) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(phoneNumber);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    return hashHex;
+}
+
+// ==========================================
 // 初期化完了
 // ==========================================
 
 console.log('🎁 抽選応募システム初期化完了');
-console.log('⚠️ セキュリティルールの設定を忘れずに！');
+console.log('⚠️ セキュリティルールの設定を忘れずに!');
