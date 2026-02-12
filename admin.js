@@ -400,40 +400,46 @@ function showQrCode(campaignId, campaignName) {
     elements.qrModal.classList.remove('hidden');
 }
 
-// QRコード生成処理を分離
+// ==========================================
+// QRコード生成処理
+// ==========================================
+
 function generateQRCode(url) {
     console.log('🎨 QRコード生成開始:', url);
-    console.log('🔍 window.QRCode:', typeof window.QRCode);
 
-    if (typeof window.QRCode === 'undefined') {
-        console.error('❌ QRCodeが未定義です');
-        alert('QRCodeライブラリが読み込まれていません。');
-        return;
-    }
+    // Google Charts APIを使用してQRコードを生成
+    const qrSize = 300;
+    const qrUrl = `https://chart.googleapis.com/chart?cht=qr&chs=${qrSize}x${qrSize}&chl=${encodeURIComponent(url)}`;
 
-    try {
-        window.QRCode.toCanvas(url, {
-            width: 300,
-            margin: 2,
-            color: {
-                dark: '#000000',
-                light: '#FFFFFF'
-            }
-        }, (error, canvas) => {
-            if (error) {
-                console.error('❌ QRコード生成エラー:', error);
-                alert('QRコードの生成に失敗しました。');
-                return;
-            }
+    console.log('🔗 QR URL:', qrUrl);
 
-            console.log('✅ QRコード生成成功');
-            currentQrCanvas = canvas;
-            elements.qrCodeContainer.appendChild(canvas);
-        });
-    } catch (error) {
-        console.error('❌ QRCode.toCanvas実行エラー:', error);
-        alert('QRコード生成中にエラーが発生しました: ' + error.message);
-    }
+    // 画像要素を作成
+    const img = document.createElement('img');
+    img.src = qrUrl;
+    img.alt = 'QR Code';
+    img.style.width = '300px';
+    img.style.height = '300px';
+    img.style.border = '4px solid #e5e7eb';
+    img.style.borderRadius = '8px';
+
+    img.onload = () => {
+        console.log('✅ QRコード生成成功');
+        elements.qrCodeContainer.innerHTML = '';
+        elements.qrCodeContainer.appendChild(img);
+
+        // ダウンロード用にcanvasに変換
+        const canvas = document.createElement('canvas');
+        canvas.width = qrSize;
+        canvas.height = qrSize;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        currentQrCanvas = canvas;
+    };
+
+    img.onerror = () => {
+        console.error('❌ QRコード画像の読み込みに失敗しました');
+        alert('QRコードの生成に失敗しました。');
+    };
 }
 
 // ==========================================
