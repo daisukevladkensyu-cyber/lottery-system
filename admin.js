@@ -511,4 +511,15 @@ function formatDateTimeLocal(date) {
     return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
+// QRCodeライブラリの読み込み確認
+window.addEventListener('load', () => {
+    console.log('🔍 QRCodeライブラリの状態:', typeof window.QRCode);
+    if (typeof window.QRCode !== 'undefined') {
+        console.log('✅ QRCodeライブラリが正常に読み込まれました');
+    } else {
+        console.error('❌ QRCodeライブラリが読み込まれていません');
+    }
+});
+
 console.log('🎁 管理画面初期化完了');
+
