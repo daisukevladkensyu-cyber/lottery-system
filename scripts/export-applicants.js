@@ -30,6 +30,7 @@ try {
 }
 
 const db = admin.firestore();
+const auth = admin.auth();
 
 // ==========================================
 // 応募者データのエクスポート
@@ -48,16 +49,36 @@ async function exportApplicants() {
 
         const applicants = [];
 
-        snapshot.forEach(doc => {
+        console.log('👤 ユーザー情報を取得中...');
+
+        for (const doc of snapshot.docs) {
             const data = doc.data();
-            applicants.push({
-                uid: doc.id,
-                name: data.name,
-                email: data.email,
-                appliedAt: data.appliedAt?.toDate().toISOString(),
-                status: data.status || 'pending'
-            });
-        });
+
+            // Firebase Authenticationからユーザー情報を取得
+            try {
+                const userRecord = await auth.getUser(doc.id);
+
+                applicants.push({
+                    uid: doc.id,
+                    name: userRecord.displayName || '名前未設定',
+                    email: userRecord.email || 'メールアドレス未設定',
+                    phoneHash: data.phoneHash || '',
+                    appliedAt: data.appliedAt?.toDate().toISOString(),
+                    status: data.status || 'pending'
+                });
+            } catch (authError) {
+                console.warn(`⚠️  ユーザー ${doc.id} の情報取得に失敗:`, authError.message);
+                // Authenticationにユーザーが存在しない場合もデータは保持
+                applicants.push({
+                    uid: doc.id,
+                    name: '取得失敗',
+                    email: '取得失敗',
+                    phoneHash: data.phoneHash || '',
+                    appliedAt: data.appliedAt?.toDate().toISOString(),
+                    status: data.status || 'pending'
+                });
+            }
+        }
 
         // JSONファイルに保存
         fs.writeFileSync(

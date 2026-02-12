@@ -256,14 +256,12 @@ elements.submitBtn.addEventListener('click', async () => {
         console.log('✅ 重複なし');
         elements.submitBtn.textContent = '送信中...';
 
-        // Firestoreに応募データを保存
+        // Firestoreに応募データを保存（個人情報は保存しない）
         await setDoc(doc(db, 'applicants', user.uid), {
-            uid: user.uid,
-            name: user.displayName,
-            email: user.email,
-            phoneHash: phoneHash,  // ハッシュ化された電話番号のみ保存
-            appliedAt: serverTimestamp(),
-            status: 'pending' // pending, winner, loser
+            uid: user.uid,                    // Firebase認証ID
+            phoneHash: phoneHash,             // ハッシュ化された電話番号（重複チェック用）
+            appliedAt: serverTimestamp(),     // 応募日時
+            status: 'pending'                 // pending, winner, loser
         });
 
         console.log('✅ 応募データ保存完了');

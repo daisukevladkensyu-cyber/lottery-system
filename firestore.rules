@@ -1,13 +1,14 @@
 rules_version = '2';
 
 // ==========================================
-// Firestore セキュリティルール（電話番号ハッシュ対応版）
+// Firestore セキュリティルール（個人情報保護版）
 // ==========================================
 //
-// このルールは最大限のセキュリティを確保します：
+// このルールは最大限のセキュリティとプライバシーを確保します：
 // - 認証済みユーザーのみが自分のデータを作成可能
 // - 本人のみが自分のデータを読み取り可能
 // - データの更新・削除は誰もできない
+// - 個人情報（氏名・メールアドレス）は保存しない
 // - 電話番号はハッシュ化されて保存される
 //
 // Firebase Consoleでこのルールを設定してください：
@@ -24,11 +25,12 @@ service cloud.firestore {
       // 作成: 認証済みユーザーが自分のUIDと一致する場合のみ
       allow create: if request.auth != null 
                     && request.auth.uid == uid
-                    && request.resource.data.keys().hasAll(['uid', 'name', 'email', 'phoneHash', 'appliedAt', 'status'])
+                    && request.resource.data.keys().hasAll(['uid', 'phoneHash', 'appliedAt', 'status'])
                     && request.resource.data.uid == uid
                     && request.resource.data.status == 'pending'
                     && request.resource.data.phoneHash is string
-                    && request.resource.data.phoneHash.size() == 64;  // SHA-256ハッシュは64文字
+                    && request.resource.data.phoneHash.size() == 64  // SHA-256ハッシュは64文字
+                    && !request.resource.data.keys().hasAny(['name', 'email', 'phone']);  // 個人情報の保存を禁止
       
       // 読み取り: 認証済みユーザーが自分のデータのみ読み取り可能
       allow read: if request.auth != null && request.auth.uid == uid;
