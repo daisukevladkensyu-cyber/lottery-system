@@ -64,14 +64,21 @@ const elements = {
 // ==========================================
 
 function showScreen(screenName) {
+    console.log('🖥️ 画面遷移:', screenName);
+
     // すべての画面を非表示
     Object.values(screens).forEach(screen => {
-        screen.classList.add('hidden');
+        if (screen) {
+            screen.classList.add('hidden');
+        }
     });
 
     // 指定された画面を表示
     if (screens[screenName]) {
         screens[screenName].classList.remove('hidden');
+        console.log('✅ 画面表示完了:', screenName);
+    } else {
+        console.error('❌ 画面が見つかりません:', screenName);
     }
 }
 
