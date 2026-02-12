@@ -402,23 +402,38 @@ function showQrCode(campaignId, campaignName) {
 
 // QRコード生成処理を分離
 function generateQRCode(url) {
-    window.QRCode.toCanvas(url, {
-        width: 300,
-        margin: 2,
-        color: {
-            dark: '#000000',
-            light: '#FFFFFF'
-        }
-    }, (error, canvas) => {
-        if (error) {
-            console.error('QRコード生成エラー:', error);
-            alert('QRコードの生成に失敗しました。');
-            return;
-        }
+    console.log('🎨 QRコード生成開始:', url);
+    console.log('🔍 window.QRCode:', typeof window.QRCode);
 
-        currentQrCanvas = canvas;
-        elements.qrCodeContainer.appendChild(canvas);
-    });
+    if (typeof window.QRCode === 'undefined') {
+        console.error('❌ QRCodeが未定義です');
+        alert('QRCodeライブラリが読み込まれていません。');
+        return;
+    }
+
+    try {
+        window.QRCode.toCanvas(url, {
+            width: 300,
+            margin: 2,
+            color: {
+                dark: '#000000',
+                light: '#FFFFFF'
+            }
+        }, (error, canvas) => {
+            if (error) {
+                console.error('❌ QRコード生成エラー:', error);
+                alert('QRコードの生成に失敗しました。');
+                return;
+            }
+
+            console.log('✅ QRコード生成成功');
+            currentQrCanvas = canvas;
+            elements.qrCodeContainer.appendChild(canvas);
+        });
+    } catch (error) {
+        console.error('❌ QRCode.toCanvas実行エラー:', error);
+        alert('QRコード生成中にエラーが発生しました: ' + error.message);
+    }
 }
 
 // ==========================================

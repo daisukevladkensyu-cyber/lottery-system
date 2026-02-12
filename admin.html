@@ -142,7 +142,9 @@
     </div>
 
     <!-- QRコード生成ライブラリ -->
-    <script src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js"
+        onload="console.log('✅ QRCodeライブラリ読み込み完了:', typeof QRCode)" onerror="console.error('❌ QRCodeライブラリ読み込み失敗')">
+        </script>
     <!-- Firebase SDK -->
     <script type="module" src="admin.js"></script>
 </body>
