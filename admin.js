@@ -393,9 +393,9 @@ function showQrCode(campaignId, campaignName) {
 function generateQRCode(url) {
     console.log('🎨 QRコード生成開始:', url);
 
-    // Google Charts APIを使用してQRコードを生成
+    // QRServer APIを使用してQRコードを生成（より信頼性が高い）
     const qrSize = 300;
-    const qrUrl = `https://chart.googleapis.com/chart?cht=qr&chs=${qrSize}x${qrSize}&chl=${encodeURIComponent(url)}`;
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${qrSize}x${qrSize}&data=${encodeURIComponent(url)}`;
 
     console.log('🔗 QR URL:', qrUrl);
 
@@ -407,6 +407,7 @@ function generateQRCode(url) {
     img.style.height = '300px';
     img.style.border = '4px solid #e5e7eb';
     img.style.borderRadius = '8px';
+    img.crossOrigin = 'anonymous'; // CORS対応
 
     img.onload = () => {
         console.log('✅ QRコード生成成功');
@@ -418,13 +419,21 @@ function generateQRCode(url) {
         canvas.width = qrSize;
         canvas.height = qrSize;
         const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
-        currentQrCanvas = canvas;
+
+        try {
+            ctx.drawImage(img, 0, 0);
+            currentQrCanvas = canvas;
+            console.log('✅ Canvas変換成功');
+        } catch (error) {
+            console.warn('⚠️ Canvas変換失敗（CORS制限）:', error);
+            // Canvas変換に失敗してもQRコードは表示されている
+            currentQrCanvas = null;
+        }
     };
 
     img.onerror = () => {
         console.error('❌ QRコード画像の読み込みに失敗しました');
-        alert('QRコードの生成に失敗しました。');
+        alert('QRコードの生成に失敗しました。URLを手動でコピーしてください。');
     };
 }
 
