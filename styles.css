@@ -485,6 +485,12 @@ body {
     font-weight: 500;
 }
 
+.loading-detail {
+    font-size: 0.875rem;
+    color: var(--text-light);
+    margin-top: var(--spacing-xs);
+}
+
 /* ==================== */
 /* ボタングループ */
 /* ==================== */

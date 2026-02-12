@@ -113,6 +113,15 @@ function validatePhoneNumber(phone) {
 
 console.log('🔄 認証状態の監視を開始...');
 
+// タイムアウト処理（10秒経過してもログイン画面に遷移しない場合）
+let authCheckCompleted = false;
+setTimeout(() => {
+    if (!authCheckCompleted) {
+        console.error('⏱️ 認証状態の確認がタイムアウトしました');
+        showError('初期化に時間がかかっています。ページを再読み込みしてください。');
+    }
+}, 10000);
+
 onAuthStateChanged(auth, async (user) => {
     console.log('👤 認証状態変更:', user ? `ログイン済み (${user.email})` : '未ログイン');
 
@@ -125,6 +134,9 @@ onAuthStateChanged(auth, async (user) => {
         console.log('🔓 ログイン画面を表示');
         showScreen('login');
     }
+
+    // 認証チェック完了フラグ
+    authCheckCompleted = true;
 });
 
 // ==========================================
