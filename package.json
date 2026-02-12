@@ -1,0 +1,16 @@
+{
+  "name": "lottery-system-admin",
+  "version": "1.0.0",
+  "description": "抽選システム管理者用スクリプト",
+  "type": "module",
+  "scripts": {
+    "export": "node scripts/export-applicants.js",
+    "lottery": "node scripts/run-lottery.js",
+    "delete-losers": "node scripts/delete-losers.js",
+    "delete-all": "node scripts/delete-all-applicants.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.0.0"
+  },
+  "devDependencies": {}
+}

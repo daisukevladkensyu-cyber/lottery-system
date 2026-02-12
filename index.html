@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>抽選応募システム</title>
+    <meta name="description" content="安全な抽選応募システム - Googleアカウントでログインして応募できます">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- ローディング画面 -->
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>読み込み中...</p>
+        </div>
+
+        <!-- ログイン画面 -->
+        <div id="login-screen" class="screen hidden">
+            <div class="card">
+                <div class="header">
+                    <h1>🎁 抽選応募システム</h1>
+                    <p class="subtitle">安全・簡単に応募できます</p>
+                </div>
+
+                <div class="content">
+                    <div class="info-box">
+                        <h2>📋 応募について</h2>
+                        <ul>
+                            <li>Googleアカウントでログインが必要です</li>
+                            <li>お一人様1回のみ応募可能です</li>
+                            <li>抽選は後日実施いたします</li>
+                            <li>当選者にはメールでご連絡いたします</li>
+                        </ul>
+                    </div>
+
+                    <button id="google-login-btn" class="btn-primary">
+                        <svg width="18" height="18" viewBox="0 0 18 18">
+                            <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>
+                            <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/>
+                            <path fill="#FBBC05" d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.347 6.175 0 7.55 0 9s.348 2.825.957 4.039l3.007-2.332z"/>
+                            <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/>
+                        </svg>
+                        Googleアカウントでログイン
+                    </button>
+
+                    <div class="privacy-notice">
+                        <h3>🔒 個人情報の取り扱いについて</h3>
+                        <div class="privacy-content">
+                            <p><strong>収集する情報：</strong>Googleアカウントのメールアドレスおよび氏名</p>
+                            <p><strong>利用目的：</strong>抽選の実施および当選者への連絡のみ</p>
+                            <p><strong>保管期間：</strong>抽選実施および当選連絡完了後、速やかに削除いたします</p>
+                            <p><strong>第三者提供：</strong>一切行いません</p>
+                            <p><strong>セキュリティ：</strong>Firebase Authentication および Firestore のセキュリティルールにより保護されています</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 応募画面 -->
+        <div id="application-screen" class="screen hidden">
+            <div class="card">
+                <div class="header">
+                    <h1>✍️ 抽選応募フォーム</h1>
+                    <p class="subtitle">以下の内容で応募します</p>
+                </div>
+
+                <div class="content">
+                    <div class="user-info">
+                        <div class="info-item">
+                            <label>お名前</label>
+                            <p id="user-name" class="info-value"></p>
+                        </div>
+                        <div class="info-item">
+                            <label>メールアドレス</label>
+                            <p id="user-email" class="info-value"></p>
+                        </div>
+                    </div>
+
+                    <div class="notice-box">
+                        <p>⚠️ 応募は1回のみです。送信後の変更はできません。</p>
+                    </div>
+
+                    <div class="button-group">
+                        <button id="submit-btn" class="btn-primary">応募する</button>
+                        <button id="logout-btn" class="btn-secondary">ログアウト</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 応募完了画面 -->
+        <div id="success-screen" class="screen hidden">
+            <div class="card">
+                <div class="header success">
+                    <div class="success-icon">✓</div>
+                    <h1>応募完了しました！</h1>
+                    <p class="subtitle">ご応募ありがとうございます</p>
+                </div>
+
+                <div class="content">
+                    <div class="success-message">
+                        <p>抽選は後日実施いたします。</p>
+                        <p>当選された方には、登録されたメールアドレス宛にご連絡いたします。</p>
+                        <p class="highlight">※ 落選された方の個人情報は、抽選終了後速やかに削除いたします。</p>
+                    </div>
+
+                    <button id="close-btn" class="btn-secondary">閉じる</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- エラー画面 -->
+        <div id="error-screen" class="screen hidden">
+            <div class="card">
+                <div class="header error">
+                    <div class="error-icon">⚠</div>
+                    <h1>エラーが発生しました</h1>
+                </div>
+
+                <div class="content">
+                    <p id="error-message" class="error-text"></p>
+                    <button id="retry-btn" class="btn-primary">再試行</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 既に応募済み画面 -->
+        <div id="already-applied-screen" class="screen hidden">
+            <div class="card">
+                <div class="header">
+                    <div class="info-icon">ℹ️</div>
+                    <h1>応募済みです</h1>
+                </div>
+
+                <div class="content">
+                    <p>このアカウントは既に応募済みです。</p>
+                    <p>抽選結果をお待ちください。</p>
+                    <button id="logout-already-btn" class="btn-secondary">ログアウト</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module" src="app.js"></script>
+</body>
+</html>

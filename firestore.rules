@@ -1,0 +1,42 @@
+rules_version = '2';
+
+// ==========================================
+// Firestore セキュリティルール
+// ==========================================
+//
+// このルールは最大限のセキュリティを確保します：
+// - 認証済みユーザーのみが自分のデータを作成可能
+// - 誰もデータを読み取れない（管理者はConsoleから閲覧）
+// - データの更新・削除は誰もできない
+//
+// Firebase Consoleでこのルールを設定してください：
+// 1. Firebase Console > Firestore Database > ルール
+// 2. 以下の内容をコピー＆ペースト
+// 3. 「公開」をクリック
+//
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // applicantsコレクション
+    match /applicants/{uid} {
+      // 作成: 認証済みユーザーが自分のUIDと一致する場合のみ
+      allow create: if request.auth != null 
+                    && request.auth.uid == uid
+                    && request.resource.data.keys().hasAll(['uid', 'name', 'email', 'appliedAt', 'status'])
+                    && request.resource.data.uid == uid
+                    && request.resource.data.status == 'pending';
+      
+      // 読み取り: 誰も許可しない（管理者はConsoleから閲覧）
+      allow read: if false;
+      
+      // 更新・削除: 誰も許可しない（管理者はAdmin SDKで操作）
+      allow update, delete: if false;
+    }
+    
+    // その他のコレクションはすべて拒否
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
